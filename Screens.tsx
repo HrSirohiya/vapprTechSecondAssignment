@@ -14,6 +14,7 @@ import {
   } from 'react-native';
 import {RootStackParamList} from './App';
 import axios from 'axios';
+import filter from 'lodash.filter'
 
 
 type ScreenNavigationProp<
@@ -32,6 +33,8 @@ export const HomeScreen: React.FC<Props<'HomeScreen'>> = ({navigation}) => {
   const [loading, setLoading] = useState(true);
   const [dataSource, setDataSource] = useState([]);
   const [offset, setOffset] = useState(1);
+  const [query, setQuery] = useState('');
+  const [fullData, setFullData] = useState([]);
 
   useEffect(() => getData(), []);
 
@@ -48,6 +51,7 @@ export const HomeScreen: React.FC<Props<'HomeScreen'>> = ({navigation}) => {
         setOffset(offset + 1);
         //Increasing the offset for the next API call
         setDataSource([...dataSource, ...responseJson.hits]);
+        setFullData([...dataSource, ...responseJson.hits]);
         setLoading(false);
       })
       .catch((error) => {
@@ -129,10 +133,53 @@ export const HomeScreen: React.FC<Props<'HomeScreen'>> = ({navigation}) => {
     alert('Id : ' + item.objectID + ' Title : ' + item.title);
   };
 
+  function renderHeader() {
+    return (
+      <View
+        style={{
+          backgroundColor: '#fff',
+          padding: 10,
+          marginVertical: 10,
+          borderRadius: 20
+        }}
+      >
+        <TextInput
+          autoCapitalize="none"
+          autoCorrect={false}
+          clearButtonMode="always"
+          value={query}
+          onChangeText={queryText => handleSearch(queryText)}
+          placeholder="Search title ,url and author"
+          style={{ backgroundColor: '#fff', paddingHorizontal: 20 }}
+        />
+      </View>
+    );
+  }
+
+  const handleSearch = text => {
+    const formattedQuery = text.toLowerCase();
+    const filteredData = filter(fullData, item => {
+      return contains(item, formattedQuery);
+    });
+    setDataSource(filteredData);
+    setQuery(text);
+  };
+  
+  const contains = ({ title, url ,author}, query) => {
+   // const { first, last } = name;
+  
+    if (title.includes(query) || url.includes(query) || author.includes(query)) {
+      return true;
+    }
+  
+    return false;
+  };
+
   return (
     <SafeAreaView style={{flex: 1}}>
       <View style={styles.container}>
         <FlatList
+          ListHeaderComponent={renderHeader}
           data={dataSource}
           keyExtractor={(item, index) => index.toString()}
           ItemSeparatorComponent={ItemSeparatorView}
